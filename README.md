@@ -33,6 +33,18 @@ docker compose up --build
 - Django Admin: `http://localhost:8000/admin/`
 - Frontend: `http://localhost:5173/`
 
+## Production на VPS
+
+Для сервера `147.45.185.185` с SSH-портом `6767` смотри [DEPLOY.md](/home/aman/chikkenoff/DEPLOY.md).
+
+Короткий запуск на сервере:
+
+```bash
+cp backend/.env.production.example backend/.env
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml exec backend python manage.py createsuperuser
+```
+
 Для первого пользователя:
 
 ```bash
