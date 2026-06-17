@@ -1,0 +1,279 @@
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: #f5f6f7;
+  color: #172026;
+}
+
+.topbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 360px) 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 18px;
+  background: #ffffff;
+  border-bottom: 1px solid #d8dde1;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.brand-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  color: #ffffff;
+  background: #215c5c;
+}
+
+.pos-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 410px;
+  min-height: calc(100vh - 73px);
+}
+
+.catalog-panel {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.quick-actions {
+  white-space: nowrap;
+}
+
+.category-row {
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.product-tile {
+  border: 1px solid #ccd3d8;
+  border-radius: 8px;
+  min-height: 128px;
+  padding: 14px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.product-tile:hover {
+  border-color: #215c5c;
+}
+
+.tile-code {
+  width: 42px;
+  height: 32px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  background: #edf4f4;
+  color: #215c5c;
+  font-weight: 900;
+}
+
+.tile-name {
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.tile-price {
+  color: #4f5d66;
+  font-weight: 700;
+}
+
+.order-panel {
+  background: #ffffff;
+  border-left: 1px solid #d8dde1;
+  padding: 18px;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  gap: 14px;
+  min-height: calc(100vh - 73px);
+}
+
+.cart-list {
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 260px;
+}
+
+.cart-item .MuiCardContent-root,
+.kds-card .MuiCardContent-root {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.quantity {
+  width: 34px;
+  text-align: center;
+  font-weight: 900;
+}
+
+.empty-state {
+  height: 100%;
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  color: #6b7780;
+  border: 1px dashed #c8d0d6;
+  border-radius: 8px;
+}
+
+.work-area {
+  padding: 18px;
+}
+
+.kds-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.kds-card.success {
+  border-left: 6px solid #2e7d32;
+}
+
+.kds-card.warning {
+  border-left: 6px solid #c77700;
+}
+
+.kds-card.danger {
+  border-left: 6px solid #b3261e;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.split-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.rank-row {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+}
+
+.ai-list {
+  margin-top: 12px;
+}
+
+.table-card {
+  background: #ffffff;
+  border: 1px solid #d8dde1;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.table-header,
+.table-row {
+  display: grid;
+  gap: 12px;
+  align-items: center;
+  min-width: 760px;
+  padding: 13px 16px;
+}
+
+.table-header {
+  background: #f0f3f5;
+  color: #4f5d66;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.table-row {
+  border-top: 1px solid #e4e8eb;
+}
+
+.branch-table {
+  grid-template-columns: 1.4fr 1fr 1fr 1fr 0.7fr;
+}
+
+.crm-table {
+  grid-template-columns: 1fr 1.2fr 0.8fr 0.6fr 0.8fr 1fr;
+}
+
+.stock-table {
+  grid-template-columns: 1fr 1fr 0.8fr 0.8fr 1fr;
+}
+
+@media (max-width: 1020px) {
+  .topbar {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .order-panel {
+    border-left: 0;
+    border-top: 1px solid #d8dde1;
+    min-height: auto;
+  }
+
+  .metric-grid,
+  .split-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .catalog-panel,
+  .order-panel,
+  .work-area {
+    padding: 12px;
+  }
+
+  .product-grid,
+  .metric-grid,
+  .split-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .product-tile {
+    min-height: 104px;
+  }
+
+  .rank-row {
+    grid-template-columns: 1fr;
+  }
+}
