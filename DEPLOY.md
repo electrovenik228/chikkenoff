@@ -90,7 +90,15 @@ docker compose -f docker-compose.prod.yml logs -f backend
 - `http://147.45.185.185:6767/api/`
 - `http://147.45.185.185:6767/admin/`
 
-## 7. Обновление после изменений
+## 7. Настроить доступ сотрудников по филиалам
+
+В админке создай филиалы, пользователей и `EmployeeProfile` для каждого пользователя.
+
+- `owner`, `director` и `superuser` видят всю сеть.
+- `manager`, `shift_lead`, `cashier`, `cook`, `courier` видят только свой `primary_branch`.
+- Пользователь без активного `EmployeeProfile.primary_branch` будет получать пустые списки в API.
+
+## 8. Обновление после изменений
 
 ```bash
 cd /opt/chikkenoff

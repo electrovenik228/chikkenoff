@@ -73,11 +73,27 @@ class BranchProductPriceSerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source="category.name", read_only=True)
     available_modifiers = ProductModifierSerializer(many=True, read_only=True)
-    branch_prices = BranchProductPriceSerializer(many=True, read_only=True)
+    branch_prices = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = "__all__"
+
+    def get_branch_prices(self, obj: Product):
+        request = self.context.get("request")
+        queryset = obj.branch_prices.all()
+        if request and request.user.is_authenticated and not request.user.is_superuser:
+            profile = getattr(request.user, "employee_profile", None)
+            can_see_all = profile and profile.is_active and profile.role in {
+                EmployeeProfile.Role.OWNER,
+                EmployeeProfile.Role.DIRECTOR,
+            }
+            if not can_see_all:
+                if not profile or not profile.primary_branch_id:
+                    queryset = queryset.none()
+                else:
+                    queryset = queryset.filter(branch_id=profile.primary_branch_id)
+        return BranchProductPriceSerializer(queryset, many=True, context=self.context).data
 
 
 class CustomerSerializer(serializers.ModelSerializer):
