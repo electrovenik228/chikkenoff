@@ -45,7 +45,7 @@ services:
       target: production
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "6767:80"
     volumes:
       - static_data:/usr/share/nginx/html/static:ro
       - media_data:/usr/share/nginx/html/media:ro
