@@ -80,8 +80,19 @@ class BranchAccessMixin:
             return None
         return profile.primary_branch
 
-    def scope_queryset(self, queryset, branch_lookup=None):
+    def requested_branch_id(self):
         if self.can_access_all_branches():
+            return self.request.query_params.get("branch")
+        return self.user_branch_id()
+
+    def scope_queryset(self, queryset, branch_lookup=None, require_branch=False):
+        if self.can_access_all_branches():
+            lookup = branch_lookup if branch_lookup is not None else self.branch_lookup
+            branch_id = self.requested_branch_id()
+            if lookup and branch_id:
+                return queryset.filter(**{lookup: branch_id}).distinct()
+            if require_branch:
+                return queryset.none()
             return queryset
         if self.global_only:
             return queryset.none()
@@ -185,11 +196,11 @@ class CustomerViewSet(BaseModelViewSet):
             output_field=DecimalField(max_digits=12, decimal_places=2),
         )
         queryset = Customer.objects.all()
-        if not self.can_access_all_branches():
-            branch_id = self.user_branch_id()
-            if not branch_id:
-                return Customer.objects.none()
+        branch_id = self.requested_branch_id()
+        if branch_id:
             queryset = queryset.filter(orders__branch_id=branch_id)
+        elif not self.can_access_all_branches():
+            return Customer.objects.none()
         return queryset.distinct().annotate(
             order_count=Count("orders", distinct=True),
             average_check=Coalesce(Avg(line_total), 0, output_field=DecimalField(max_digits=10, decimal_places=2)),
@@ -342,8 +353,8 @@ class DashboardAPIView(BranchAccessMixin, APIView):
         now = timezone.now()
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        paid_orders = self.scope_queryset(Order.objects.exclude(status=Order.Status.CANCELED), "branch_id")
-        scoped_payments = self.scope_queryset(Payment.objects.all(), "order__branch_id")
+        paid_orders = self.scope_queryset(Order.objects.exclude(status=Order.Status.CANCELED), "branch_id", require_branch=True)
+        scoped_payments = self.scope_queryset(Payment.objects.all(), "order__branch_id", require_branch=True)
 
         revenue_today = money(scoped_payments.filter(order__created_at__gte=today_start).aggregate(total=Sum("amount"))["total"])
         revenue_month = money(scoped_payments.filter(order__created_at__gte=month_start).aggregate(total=Sum("amount"))["total"])
@@ -351,7 +362,7 @@ class DashboardAPIView(BranchAccessMixin, APIView):
         average_check = revenue_today / orders_today if orders_today else 0
 
         top_products = (
-            self.scope_queryset(OrderItem.objects.all(), "order__branch_id")
+            self.scope_queryset(OrderItem.objects.all(), "order__branch_id", require_branch=True)
             .filter(order__created_at__gte=month_start, order__status__in=[
                 Order.Status.NEW,
                 Order.Status.COOKING,

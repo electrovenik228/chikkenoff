@@ -82,6 +82,11 @@ class ProductSerializer(serializers.ModelSerializer):
     def get_branch_prices(self, obj: Product):
         request = self.context.get("request")
         queryset = obj.branch_prices.all()
+        if request and request.user.is_authenticated:
+            requested_branch = request.query_params.get("branch")
+            if requested_branch:
+                queryset = queryset.filter(branch_id=requested_branch)
+                return BranchProductPriceSerializer(queryset, many=True, context=self.context).data
         if request and request.user.is_authenticated and not request.user.is_superuser:
             profile = getattr(request.user, "employee_profile", None)
             can_see_all = profile and profile.is_active and profile.role in {

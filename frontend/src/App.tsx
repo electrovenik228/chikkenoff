@@ -37,9 +37,11 @@ import {
 import { useMemo, useState } from "react";
 
 import {
+  BranchName,
   CartItem,
   Category,
   KitchenOrder,
+  branches,
   branchStats,
   categories,
   customers,
@@ -63,6 +65,13 @@ function App() {
   const [orders, setOrders] = useState<KitchenOrder[]>(kitchenOrders);
   const [nextOrderNumber, setNextOrderNumber] = useState(43);
   const [notice, setNotice] = useState("");
+  const [activeBranchName, setActiveBranchName] = useState<BranchName>("Бишкек Центр");
+
+  const activeBranch = branches.find((branch) => branch.name === activeBranchName) ?? branches[0];
+  const activeBranchStats = branchStats.find((branch) => branch.name === activeBranchName) ?? branchStats[0];
+  const visibleOrders = orders.filter((order) => order.branch === activeBranchName);
+  const visibleCustomers = customers.filter((customer) => customer.branch === activeBranchName);
+  const visibleStockAlerts = stockAlerts.filter((stock) => stock.branch === activeBranchName);
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
@@ -79,13 +88,20 @@ function App() {
   const addProduct = (productId: number) => {
     const product = products.find((item) => item.id === productId);
     if (!product) return;
+    const branchPrice = product.branchPrices?.[activeBranchName] ?? product.price;
     setCart((current) => {
       const existing = current.find((item) => item.id === product.id && item.modifiers.length === 0);
       if (existing) {
         return current.map((item) => (item === existing ? { ...item, quantity: item.quantity + 1 } : item));
       }
-      return [...current, { ...product, quantity: 1, modifiers: [] }];
+      return [...current, { ...product, price: branchPrice, quantity: 1, modifiers: [] }];
     });
+  };
+
+  const changeBranch = (branchName: BranchName) => {
+    setActiveBranchName(branchName);
+    setCart([]);
+    setNotice(`Открыт филиал: ${branchName}`);
   };
 
   const updateQuantity = (productId: number, delta: number) => {
@@ -111,10 +127,10 @@ function App() {
 
   const payOrder = () => {
     if (!cart.length) return;
-    const orderId = `1-${String(nextOrderNumber).padStart(5, "0")}`;
+    const orderId = `${activeBranch.code}-${String(nextOrderNumber).padStart(5, "0")}`;
     const kitchenOrder: KitchenOrder = {
       id: orderId,
-      branch: "Бишкек Центр",
+      branch: activeBranchName,
       status: "new",
       minutes: 0,
       source: "POS",
@@ -126,7 +142,7 @@ function App() {
     setOrders((current) => [kitchenOrder, ...current]);
     setNextOrderNumber((current) => current + 1);
     setCart([]);
-    setNotice(`Заказ #${orderId} оплачен и отправлен на кухню`);
+    setNotice(`Заказ #${orderId} оплачен и отправлен на кухню ${activeBranchName}`);
     setScreen("kds");
   };
 
@@ -143,18 +159,32 @@ function App() {
           <Box>
             <Typography variant="h6">Chikkenoff Cloud POS</Typography>
             <Typography variant="body2" color="text.secondary">
-              Бишкек Центр · смена #24 открыта
+              {activeBranch.name} · {activeBranch.shift}
             </Typography>
           </Box>
         </Stack>
-        <Tabs value={screen} onChange={(_, value) => setScreen(value)} variant="scrollable" allowScrollButtonsMobile>
-          <Tab icon={<ReceiptLong />} iconPosition="start" label="POS" value="pos" />
-          <Tab icon={<SoupKitchen />} iconPosition="start" label="KDS" value="kds" />
-          <Tab icon={<TrendingUp />} iconPosition="start" label="Аналитика" value="dashboard" />
-          <Tab icon={<Store />} iconPosition="start" label="Филиалы" value="branches" />
-          <Tab icon={<PeopleAlt />} iconPosition="start" label="CRM" value="crm" />
-          <Tab icon={<Inventory2 />} iconPosition="start" label="Склад" value="stock" />
-        </Tabs>
+        <Box>
+          <Tabs value={screen} onChange={(_, value) => setScreen(value)} variant="scrollable" allowScrollButtonsMobile>
+            <Tab icon={<ReceiptLong />} iconPosition="start" label="POS" value="pos" />
+            <Tab icon={<SoupKitchen />} iconPosition="start" label="KDS" value="kds" />
+            <Tab icon={<TrendingUp />} iconPosition="start" label="Аналитика" value="dashboard" />
+            <Tab icon={<Store />} iconPosition="start" label="Филиал" value="branches" />
+            <Tab icon={<PeopleAlt />} iconPosition="start" label="CRM" value="crm" />
+            <Tab icon={<Inventory2 />} iconPosition="start" label="Склад" value="stock" />
+          </Tabs>
+          <Stack direction="row" spacing={1} className="branch-switcher">
+            {branches.map((branch) => (
+              <Button
+                key={branch.name}
+                size="small"
+                variant={activeBranchName === branch.name ? "contained" : "outlined"}
+                onClick={() => changeBranch(branch.name)}
+              >
+                {branch.name}
+              </Button>
+            ))}
+          </Stack>
+        </Box>
       </Box>
 
       {screen === "pos" && (
@@ -205,7 +235,7 @@ function App() {
                 <button key={product.id} className="product-tile" onClick={() => addProduct(product.id)}>
                   <span className="tile-code">{product.name.slice(0, 2).toUpperCase()}</span>
                   <span className="tile-name">{product.name}</span>
-                  <span className="tile-price">{currency.format(product.price)}</span>
+                  <span className="tile-price">{currency.format(product.branchPrices?.[activeBranchName] ?? product.price)}</span>
                 </button>
               ))}
             </Box>
@@ -216,7 +246,7 @@ function App() {
               <Box>
                 <Typography variant="h6">Заказ</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {totalQuantity} позиций · #{cart.length ? "1-00043" : "новый"}
+                  {totalQuantity} позиций · #{cart.length ? `${activeBranch.code}-${String(nextOrderNumber).padStart(5, "0")}` : "новый"}
                 </Typography>
               </Box>
               <Tooltip title="Очистить заказ">
@@ -324,11 +354,11 @@ function App() {
         </Box>
       )}
 
-      {screen === "kds" && <KdsScreen orders={orders} onStatusChange={updateKitchenOrderStatus} />}
-      {screen === "dashboard" && <DashboardScreen />}
-      {screen === "branches" && <BranchesScreen />}
-      {screen === "crm" && <CrmScreen />}
-      {screen === "stock" && <StockScreen />}
+      {screen === "kds" && <KdsScreen branchName={activeBranchName} orders={visibleOrders} onStatusChange={updateKitchenOrderStatus} />}
+      {screen === "dashboard" && <DashboardScreen branchName={activeBranchName} branchStats={activeBranchStats} orders={visibleOrders} />}
+      {screen === "branches" && <BranchesScreen branchName={activeBranchName} branchStats={activeBranchStats} />}
+      {screen === "crm" && <CrmScreen customers={visibleCustomers} />}
+      {screen === "stock" && <StockScreen stockAlerts={visibleStockAlerts} />}
       <Snackbar open={Boolean(notice)} autoHideDuration={2600} onClose={() => setNotice("")}>
         <Alert severity="success" variant="filled" onClose={() => setNotice("")}>
           {notice}
@@ -339,14 +369,17 @@ function App() {
 }
 
 function KdsScreen({
+  branchName,
   orders,
   onStatusChange
 }: {
+  branchName: BranchName;
   orders: KitchenOrder[];
   onStatusChange: (orderId: string, status: KitchenOrder["status"]) => void;
 }) {
   return (
     <Box className="work-area">
+      {orders.length === 0 && <Typography className="empty-state">В филиале {branchName} нет активных заказов кухни</Typography>}
       <Box className="kds-grid">
         {orders.map((order) => {
           const tone = order.minutes >= 12 ? "danger" : order.minutes >= 8 ? "warning" : "success";
@@ -411,16 +444,22 @@ function statusLabel(status: KitchenOrder["status"]) {
   return "Готов";
 }
 
-function DashboardScreen() {
-  const totalRevenue = branchStats.reduce((sum, branch) => sum + branch.revenue, 0);
-  const totalOrders = branchStats.reduce((sum, branch) => sum + branch.orders, 0);
+function DashboardScreen({
+  branchName,
+  branchStats,
+  orders
+}: {
+  branchName: BranchName;
+  branchStats: { name: BranchName; revenue: number; profit: number; avgCheck: number; orders: number };
+  orders: KitchenOrder[];
+}) {
   return (
     <Box className="work-area">
       <Box className="metric-grid">
-        <Metric title="Выручка сегодня" value={currency.format(42800)} />
-        <Metric title="Выручка за месяц" value={currency.format(totalRevenue)} />
-        <Metric title="Средний чек" value={currency.format(Math.round(totalRevenue / totalOrders))} />
-        <Metric title="Количество заказов" value={String(totalOrders)} />
+        <Metric title="Филиал" value={branchName} />
+        <Metric title="Выручка за месяц" value={currency.format(branchStats.revenue)} />
+        <Metric title="Средний чек" value={currency.format(branchStats.avgCheck)} />
+        <Metric title="Активные заказы" value={String(orders.length)} />
       </Box>
       <Box className="split-grid">
         <Card>
@@ -438,9 +477,9 @@ function DashboardScreen() {
           <CardContent>
             <Typography variant="h6">AI Аналитик</Typography>
             <Stack spacing={1.25} className="ai-list">
-              <Typography>Выручка ниже плана в филиале Ош Парк на 11% из-за падения заказов после 20:00.</Typography>
+              <Typography>{branchName}: активных заказов кухни сейчас {orders.length}.</Typography>
               <Typography>Кола и Фри чаще всего покупаются вместе с Чизбургером. Комбо-кнопка сократит клики кассира.</Typography>
-              <Typography>На завтра нужно увеличить заготовку котлет в Бишкек Центр на 18%.</Typography>
+              <Typography>Прогноз склада считается только по выбранному филиалу.</Typography>
             </Stack>
           </CardContent>
         </Card>
@@ -449,7 +488,13 @@ function DashboardScreen() {
   );
 }
 
-function BranchesScreen() {
+function BranchesScreen({
+  branchName,
+  branchStats
+}: {
+  branchName: BranchName;
+  branchStats: { name: BranchName; revenue: number; profit: number; avgCheck: number; orders: number };
+}) {
   return (
     <Box className="work-area">
       <Box className="table-card">
@@ -460,21 +505,23 @@ function BranchesScreen() {
           <span>Средний чек</span>
           <span>Заказы</span>
         </Box>
-        {branchStats.map((branch) => (
-          <Box key={branch.name} className="table-row branch-table">
-            <strong>{branch.name}</strong>
-            <span>{currency.format(branch.revenue)}</span>
-            <span>{currency.format(branch.profit)}</span>
-            <span>{currency.format(branch.avgCheck)}</span>
-            <span>{branch.orders}</span>
-          </Box>
-        ))}
+        <Box className="table-row branch-table">
+          <strong>{branchName}</strong>
+          <span>{currency.format(branchStats.revenue)}</span>
+          <span>{currency.format(branchStats.profit)}</span>
+          <span>{currency.format(branchStats.avgCheck)}</span>
+          <span>{branchStats.orders}</span>
+        </Box>
       </Box>
     </Box>
   );
 }
 
-function CrmScreen() {
+function CrmScreen({
+  customers
+}: {
+  customers: { name: string; phone: string; segment: string; orders: number; avg: number; favorite: string }[];
+}) {
   return (
     <Box className="work-area">
       <Box className="table-card">
@@ -496,12 +543,17 @@ function CrmScreen() {
             <span>{customer.favorite}</span>
           </Box>
         ))}
+        {customers.length === 0 && <Typography className="empty-state">В этом филиале пока нет клиентов</Typography>}
       </Box>
     </Box>
   );
 }
 
-function StockScreen() {
+function StockScreen({
+  stockAlerts
+}: {
+  stockAlerts: { item: string; branch: BranchName; balance: string; threshold: string }[];
+}) {
   return (
     <Box className="work-area">
       <Box className="table-card">
@@ -521,6 +573,7 @@ function StockScreen() {
             <Chip label="низкий остаток" color="warning" size="small" />
           </Box>
         ))}
+        {stockAlerts.length === 0 && <Typography className="empty-state">В этом филиале нет критичных остатков</Typography>}
       </Box>
     </Box>
   );

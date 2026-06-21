@@ -38,6 +38,11 @@ body {
   background: #215c5c;
 }
 
+.branch-switcher {
+  padding: 8px 0 2px;
+  overflow-x: auto;
+}
+
 .pos-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 410px;
